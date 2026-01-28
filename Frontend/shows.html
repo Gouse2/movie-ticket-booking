@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shows - Movie Ticket Booking</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Shows for <span id="movie-title"></span></h1>
+
+        <!-- Movie Poster -->
+        <div style="text-align:center; margin:20px 0;">
+            <img id="movie-poster" src="" alt="Movie Poster" style="width:220px; height:320px; object-fit:cover; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+        </div>
+
+        <a href="index.html" style="display:inline-block; margin:20px 0; color:#3498db; font-weight:bold; text-decoration:none; font-size:1.1rem;">← Back to Movies</a>
+
+        <section id="shows-section">
+            <div id="shows-list" class="loading">Loading shows...</div>
+        </section>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+
+        // Get movie ID and title from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        let movieId = urlParams.get('id');
+        let movieTitle = decodeURIComponent(urlParams.get('title') || 'Movie');
+
+        // Remember last movie if coming back (browser back button)
+        if (!movieId) {
+            movieId = localStorage.getItem('lastMovieId');
+            movieTitle = localStorage.getItem('lastMovieTitle') || 'Movie';
+        } else {
+            localStorage.setItem('lastMovieId', movieId);
+            localStorage.setItem('lastMovieTitle', movieTitle);
+        }
+
+        document.getElementById('movie-title').textContent = movieTitle;
+
+        // Show poster (same as main page and seats page)
+        const posters = {
+            "Kalki 2898 AD": "https://m.media-amazon.com/images/M/MV5BMjE4ZTZlNDAtM2Q3YS00YjFhLThjN2UtODg2ZGNlN2E2MWU1XkEyXkFqcGc@._V1_.jpg",
+            "The Raja Saab": "https://upload.wikimedia.org/wikipedia/en/9/9e/The_RajaSaab_poster.jpg",
+            "Mana Shankara Vara Prasad Garu": "https://upload.wikimedia.org/wikipedia/en/4/43/Mana_Shankara_Vara_Prasad_Garu.jpg",
+            "Anaganaga Oka Raju": "https://upload.wikimedia.org/wikipedia/en/1/1a/Anaganaga_Oka_Raju.jpg",
+            "Nari Nari Naduma Murari": "https://assets-in.bmscdn.com/iedb/movies/images/mobile/thumbnail/xlarge/nari-nari-naduma-murari-et00478367-1766561142.jpg",
+            "Bhartha Mahasayulaku Wignyapthi": "https://via.placeholder.com/220x320/2ecc71/ffffff?text=Bhartha+Mahasayulaku",
+            "Funky": "https://via.placeholder.com/220x320/3498db/ffffff?text=Funky"
+        };
+
+        document.getElementById('movie-poster').src = posters[movieTitle] || 'https://via.placeholder.com/220x320/cccccc/000000?text=' + encodeURIComponent(movieTitle);
+
+        async function loadShows() {
+            if (!movieId) {
+                document.getElementById('shows-list').innerHTML = '<p>No movie selected.</p>';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/shows/movie/${movieId}`);
+                if (!res.ok) throw new Error('Failed to load shows');
+                const shows = await res.json();
+
+                const list = document.getElementById('shows-list');
+                list.innerHTML = '';
+
+                if (shows.length === 0) {
+                    list.innerHTML = '<p>No shows available for this movie.</p>';
+                    return;
+                }
+
+                shows.forEach(show => {
+                    const div = document.createElement('div');
+                    div.className = 'show-card';
+                    div.textContent = `${show.time} - Screen ${show.screenNumber} - ₹${show.baseTicketPrice}`;
+                    div.onclick = () => {
+                        window.location.href = `seats.html?showId=${show.id}&time=${encodeURIComponent(show.time)}&movieTitle=${encodeURIComponent(movieTitle)}`;
+                    };
+                    list.appendChild(div);
+                });
+            } catch (err) {
+                console.error(err);
+                document.getElementById('shows-list').innerHTML = '<p>Error loading shows. Try again.</p>';
+            }
+        }
+
+        loadShows();
+    </script>
+</body>
+</html>

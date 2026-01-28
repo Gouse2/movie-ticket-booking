@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Ticket Booking - Simple</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Movie Ticket Booking</h1>
+
+        <input type="text" id="movie-search" placeholder="Search movies (e.g. Kalki)..." style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 10px; border: 1px solid #ccc; font-size: 1.1rem;">
+        <!-- Movies List -->
+        <section id="movies-section"> 
+            
+            <h2>Movies</h2>
+            <div id="movies-list"></div>
+        </section>
+
+        <!-- Shows for selected movie -->
+        <section id="shows-section" style="display:none;">
+            <h2>Shows for <span id="selected-movie-title"></span></h2>
+            <div id="shows-list"></div>
+        </section>
+
+        <!-- Seats for selected show -->
+        <section id="seats-section" style="display:none;">
+            <h2>Seats for Show <span id="selected-show-time"></span></h2>
+            <div id="seats-grid"></div>
+            <button id="book-btn" disabled>Book Selected Seats</button>
+            <p id="total-price">Total: ₹0</p>
+        </section>
+
+        <!-- Bookings List -->
+        <section id="bookings-section">
+            <h2>My Bookings</h2>
+            <div id="bookings-list"></div>
+        </section>
+    </div> 
+
+    
+
+    <!-- Booking Form Popup -->
+    <div id="booking-popup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+        <div style="background:white; padding:30px; border-radius:16px; width:400px; max-width:90%; box-shadow:0 10px 30px rgba(0,0,0,0.3);">
+            <h2 style="text-align:center; color:#2c3e50; margin-bottom:20px;">Complete Your Booking</h2>
+        
+            <label for="userNameInput" style="display:block; margin:10px 0 5px; font-weight:bold;">Your Name:</label>
+            <input type="text" id="userNameInput" placeholder="Enter your full name" style="width:100%; padding:12px; border:1px solid #ccc; border-radius:8px; margin-bottom:15px; font-size:1rem;">
+
+            <label for="userPhoneInput" style="display:block; margin:10px 0 5px; font-weight:bold;">Phone Number:</label>
+            <input type="tel" id="userPhoneInput" placeholder="Enter your phone number" style="width:100%; padding:12px; border:1px solid #ccc; border-radius:8px; margin-bottom:20px; font-size:1rem;">
+
+            <div style="text-align:center;">
+                <button id="confirm-book-btn" style="background:#27ae60; color:white; border:none; padding:12px 30px; border-radius:10px; font-size:1.1rem; cursor:pointer; margin-right:10px;">Confirm Booking</button>
+                <button id="cancel-book-btn" style="background:#e74c3c; color:white; border:none; padding:12px 30px; border-radius:10px; font-size:1.1rem; cursor:pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script> 
+
+</body>
+</html>

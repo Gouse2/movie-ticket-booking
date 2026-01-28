@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Seats - Movie Ticket Booking</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Extra styles for seats.html */
+        #seats-container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .seat-row {
+            display: flex;
+            justify-content: center;
+            margin: 5px 0;
+        }
+        .seat-info {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1.1rem;
+            color: #2c3e50;
+        }
+        .popup-form, .confirmed-popup {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            width: 420px;
+            max-width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        .popup-form h2, .confirmed-popup h2 {
+            margin-bottom: 20px;
+            color: #1a3c5e;
+        }
+        .popup-form label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+            color: #34495e;
+        }
+        .popup-form input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+        .popup-buttons {
+            margin-top: 25px;
+        }
+        .popup-buttons button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin: 0 10px;
+        }
+        #confirm-btn {
+            background: #27ae60;
+            color: white;
+        }
+        #cancel-btn {
+            background: #e74c3c;
+            color: white;
+        }
+        #confirmed-popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 1001;
+            justify-content: center;
+            align-items: center;
+        }
+        .success-details {
+            font-size: 1.1rem;
+            margin: 15px 0;
+            color: #2c3e50;
+        }
+        .success-details strong {
+            color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Seats for <span id="show-time"></span></h1>
+
+        <!-- Movie Poster -->
+        <div style="text-align:center; margin:20px 0;">
+            <img id="movie-poster" src="" alt="Movie Poster" style="width:220px; height:320px; object-fit:cover; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.15);">
+        </div>
+
+        <a href="shows.html" style="display:inline-block; margin:20px 0; color:#3498db; font-weight:bold; text-decoration:none;">← Back to Shows</a>
+
+        <section id="seats-section">
+            <div id="seats-container">
+                <div id="seats-grid" class="loading">Loading seats...</div>
+                <div class="seat-info">
+                    <p>Screen 1 - <span id="movie-title"></span></p>
+                </div>
+                <button id="book-btn" disabled>Book Selected Seats</button>
+                <p id="total-price">Total (incl. 18% GST): ₹0.00</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- Booking Popup -->
+    <div id="booking-popup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:1000; justify-content:center; align-items:center; pointer-events:none;">
+        <div class="popup-form" style="pointer-events:auto;">
+            <h2>Complete Your Booking</h2>
+
+            <label for="userNameInput">Your Name:</label>
+            <input type="text" id="userNameInput" placeholder="Enter your full name" required>
+
+            <label for="userPhoneInput">Phone Number:</label>
+            <input type="tel" id="userPhoneInput" placeholder="Enter your phone number" required>
+
+            <div class="popup-buttons">
+                <button id="confirm-btn">Confirm Booking</button>
+                <button id="cancel-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Confirmed Popup -->
+    <div id="confirmed-popup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1001; justify-content:center; align-items:center;">
+        <div class="confirmed-popup">
+            <h2 style="color:#27ae60;">Booking Confirmed!</h2>
+            <div class="success-details">
+                <p><strong>Movie:</strong> <span id="conf-movie"></span></p>
+                <p><strong>Show Time:</strong> <span id="conf-time"></span></p>
+                <p><strong>Seats:</strong> <span id="conf-seats"></span></p>
+                <p><strong>Total Amount:</strong> <span id="conf-total"></span> (incl. GST)</p>
+            </div>
+            <p style="color:#555; margin-top:20px;">Thank you! Redirecting to home page...</p>
+            <button onclick="window.location.href='index.html'" style="margin-top:20px; background:#3498db; color:white; border:none; padding:12px 30px; border-radius:10px; cursor:pointer;">Go to Home Now</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+
+        // Get params from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const showId = urlParams.get('showId');
+        const showTime = decodeURIComponent(urlParams.get('time') || 'Show');
+        const movieTitle = decodeURIComponent(urlParams.get('movieTitle') || 'Movie');
+
+        document.getElementById('show-time').textContent = showTime;
+        document.getElementById('movie-title').textContent = movieTitle;
+
+        // Show movie poster (same as main page)
+        const posters = {
+            "Kalki 2898 AD": "https://m.media-amazon.com/images/M/MV5BMjE4ZTZlNDAtM2Q3YS00YjFhLThjN2UtODg2ZGNlN2E2MWU1XkEyXkFqcGc@._V1_.jpg",
+            "The Raja Saab": "https://upload.wikimedia.org/wikipedia/en/9/9e/The_RajaSaab_poster.jpg",
+            "Mana Shankara Vara Prasad Garu": "https://upload.wikimedia.org/wikipedia/en/4/43/Mana_Shankara_Vara_Prasad_Garu.jpg",
+            "Anaganaga Oka Raju": "https://upload.wikimedia.org/wikipedia/en/1/1a/Anaganaga_Oka_Raju.jpg",
+            "Nari Nari Naduma Murari": "https://assets-in.bmscdn.com/iedb/movies/images/mobile/thumbnail/xlarge/nari-nari-naduma-murari-et00478367-1766561142.jpg",
+            "Bhartha Mahasayulaku Wignyapthi": "https://via.placeholder.com/220x320/2ecc71/ffffff?text=Bhartha+Mahasayulaku",
+            "Funky": "https://via.placeholder.com/220x320/3498db/ffffff?text=Funky"
+        };
+
+        document.getElementById('movie-poster').src = posters[movieTitle] || 'https://via.placeholder.com/220x320/cccccc/000000?text=' + encodeURIComponent(movieTitle);
+
+        let selectedSeats = [];
+
+        const bookingPopup = document.getElementById('booking-popup');
+        const userNameInput = document.getElementById('userNameInput');
+        const userPhoneInput = document.getElementById('userPhoneInput');
+        const confirmBtn = document.getElementById('confirm-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const confirmedPopup = document.getElementById('confirmed-popup');
+
+        async function loadSeats() {
+            if (!showId) {
+                document.getElementById('seats-grid').innerHTML = '<p>No show selected.</p>';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/seats/show/${showId}`);
+                if (!res.ok) throw new Error('Failed to load seats');
+                const seats = await res.json();
+
+                const grid = document.getElementById('seats-grid');
+                grid.innerHTML = '';
+
+                seats.forEach(seat => {
+                    const div = document.createElement('div');
+                    div.className = 'seat';
+                    div.textContent = `${seat.row}-${seat.column}`;
+                    div.title = `Row ${seat.row}, Col ${seat.column}, ₹${seat.price.toFixed(2)}`;
+
+                    if (seat.status.toUpperCase() === 'AVAILABLE') {
+                        div.classList.add('available');
+                        div.onclick = () => {
+                            div.classList.toggle('selected');
+                            toggleSeat(seat.id, seat.price);
+                        };
+                    } else {
+                        div.classList.add('booked');
+                    }
+                    grid.appendChild(div);
+                });
+            } catch (err) {
+                console.error(err);
+                document.getElementById('seats-grid').innerHTML = '<p>Error loading seats. Try again.</p>';
+            }
+        }
+
+        function toggleSeat(seatId, price) {
+            if (selectedSeats.some(s => s.id === seatId)) {
+                selectedSeats = selectedSeats.filter(s => s.id !== seatId);
+            } else {
+                selectedSeats.push({ id: seatId, price });
+            }
+            updateBookButton();
+        }
+
+        function updateBookButton() {
+            const btn = document.getElementById('book-btn');
+            const totalEl = document.getElementById('total-price');
+            const total = selectedSeats.reduce((sum, s) => sum + s.price, 0) * 1.18;
+            totalEl.textContent = `Total (incl. 18% GST): ₹${total.toFixed(2)}`;
+            btn.disabled = selectedSeats.length === 0;
+        }
+
+        async function bookSeats() {
+            if (selectedSeats.length === 0) return;
+
+            bookingPopup.style.display = 'flex';
+            userNameInput.value = '';
+            userPhoneInput.value = '';
+
+            confirmBtn.onclick = async () => {
+                const userName = userNameInput.value.trim();
+                const userPhone = userPhoneInput.value.trim();
+
+                if (!userName || !userPhone) {
+                    alert("Please enter both name and phone number!");
+                    return;
+                }
+
+                const payload = {
+                    userName,
+                    userPhone,
+                    show: { id: showId },
+                    bookedSeats: selectedSeats.map(s => ({ id: s.id }))
+                };
+
+                try {
+                    const res = await fetch(`${API_BASE}/bookings`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (res.ok) {
+                        // Fill confirmed popup
+                        document.getElementById('conf-movie').textContent = movieTitle;
+                        document.getElementById('conf-time').textContent = showTime;
+                        document.getElementById('conf-seats').textContent = selectedSeats.map(s => `${s.row}-${s.column}`).join(', ');
+                        const total = selectedSeats.reduce((sum, s) => sum + s.price, 0) * 1.18;
+                        document.getElementById('conf-total').textContent = `₹${total.toFixed(2)}`;
+
+                        // Show confirmed popup
+                        confirmedPopup.style.display = 'flex';
+
+                        // Hide booking popup
+                        bookingPopup.style.display = 'none';
+
+                        // Clear selection
+                        selectedSeats = [];
+                        updateBookButton();
+
+                        // Auto-redirect after 5 seconds
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 5000);
+                    } else {
+                        alert("Booking failed! Check console.");
+                        console.error("Booking error:", await res.text());
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert("Network error during booking.");
+                }
+            };
+
+            cancelBtn.onclick = () => {
+                bookingPopup.style.display = 'none';
+            };
+        }
+
+        // Initialize
+        document.getElementById('book-btn').onclick = bookSeats;
+        loadSeats();
+    </script>
+</body>
+</html>
